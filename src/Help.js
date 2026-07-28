@@ -1,23 +1,32 @@
 import React, { useEffect, useState } from "react";
 import { useCart } from "./CartContext";
-import { useNavigate } from "react-router-dom";
+import Header from "./Header";
 
 function Help() {
+
   const { cartItems, addToCart, increaseQty, decreaseQty } = useCart();
-  const navigate = useNavigate();
 
   const [selectedService, setSelectedService] = useState("Medicines");
-  const [medicines, setMedicines] = useState([]); // 🔥 FROM BACKEND
+  const [medicines, setMedicines] = useState([]);
 
-  // ✅ FETCH FROM BACKEND
-  useEffect(() => {
-    fetch("/api/medicines")
-      .then((res) => res.json())
-      .then((data) => setMedicines(data))
-      .catch((err) => console.error(err));
-  }, []);
 
-  const totalItems = cartItems.reduce((s, i) => s + i.quantity, 0);
+  // Fetch medicines from backend
+ useEffect(() => {
+
+  const token = localStorage.getItem("token");
+
+  fetch("http://localhost:8080/medicines", {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  })
+    .then((res) => res.json())
+    .then((data) => setMedicines(data))
+    .catch((err) => console.error(err));
+
+}, []);
+
+
 
   const services = [
     "Medicines",
@@ -27,94 +36,250 @@ function Help() {
     "Emergency"
   ];
 
+
+
   return (
+
     <div className="help-container">
 
-      {/* HEADER */}
+
+      <Header />
+
+
+      {/* PAGE HEADER */}
       <div className="help-header">
-        <h2>Services</h2>
 
-        <div className="cart-icon" onClick={() => navigate("/cart")}>
-          🛒
-          {totalItems > 0 && <span className="badge">{totalItems}</span>}
-        </div>
+        <h2>
+          Services
+        </h2>
+
       </div>
 
-      {/* SERVICES ROW */}
+
+
+      {/* SERVICES */}
       <div className="services-row">
-        {services.map((s) => (
+
+        {services.map((service) => (
+
           <div
-            key={s}
-            className={`service-box ${selectedService === s ? "active" : ""}`}
-            onClick={() => setSelectedService(s)}
+
+            key={service}
+
+            className={`service-box ${
+              selectedService === service ? "active" : ""
+            }`}
+
+            onClick={() => setSelectedService(service)}
+
           >
-            {s}
+
+            {service}
+
           </div>
+
         ))}
+
       </div>
 
-      {/* OTHER SERVICES */}
-      {selectedService !== "Medicines" && (
-        <div className="maintenance-msg">
-          🚧 {selectedService} service is under development
-        </div>
-      )}
+
+
+
+      {/* UNDER DEVELOPMENT */}
+      {
+        selectedService !== "Medicines" && (
+
+          <div className="maintenance-msg">
+
+            🚧 {selectedService} service is under development
+
+          </div>
+
+        )
+      }
+
+
+
+
+
 
       {/* MEDICINES */}
-      {selectedService === "Medicines" && (
-        <div className="medicine-vertical">
 
-          {medicines.map((med) => {
-            const item = cartItems.find((i) => i.id === med.id);
-            const qty = item ? item.quantity : 0;
+      {
+        selectedService === "Medicines" && (
 
-            return (
-              <div key={med.id} className="medicine-card">
+          <div className="medicine-vertical">
 
-                {/* LEFT INFO */}
-                <div>
-                  <h4>{med.name}</h4>
-                  <small>{med.description}</small> {/* ✅ NEW */}
-                  <p>₹{med.price}</p>
-                  <small>Stock: {med.stock}</small> {/* ✅ LIVE STOCK */}
-                </div>
 
-                {/* RIGHT ACTION */}
-                <div className="med-actions">
-                  {qty === 0 ? (
-                    <button
-                      className="add-btn"
-                      onClick={() =>
-                        addToCart({
-                          id: med.id,
-                          name: med.name
-                        })
-                      }
-                    >
-                      Add
-                    </button>
-                  ) : (
-                    <div className="qty-controls">
-                      <button onClick={() => decreaseQty(med.id)}>-</button>
-                      <span>{qty}</span>
-                      <button
-                        onClick={() => increaseQty(med.id)}
-                        disabled={qty >= 5}
-                      >
-                        +
-                      </button>
+            {
+              medicines.map((med) => {
+
+
+                const item = cartItems.find(
+                  (i) => i.id === med.id
+                );
+
+
+                const qty = item ? item.quantity : 0;
+
+
+
+                return (
+
+                  <div
+
+                    key={med.id}
+
+                    className="medicine-card"
+
+                  >
+
+
+                    {/* MEDICINE DETAILS */}
+
+                    <div>
+
+                      <h4>
+                        {med.name}
+                      </h4>
+
+
+                      <small>
+                        {med.description}
+                      </small>
+
+
+                      <p>
+                        ₹{med.price}
+                      </p>
+
+
+                      <small>
+                        Stock: {med.stock}
+                      </small>
+
+
                     </div>
-                  )}
-                </div>
 
-              </div>
-            );
-          })}
 
-        </div>
-      )}
+
+
+
+                    {/* ACTION */}
+
+                    <div className="med-actions">
+
+
+                      {
+                        qty === 0 ? (
+
+
+                          <button
+
+                            className="add-btn"
+
+                            onClick={() =>
+
+                              addToCart({
+
+                                id: med.id,
+
+                                name: med.name,
+
+                                price: med.price
+
+                              })
+
+                            }
+
+                          >
+
+                            Add
+
+                          </button>
+
+
+                        ) : (
+
+
+                          <div className="qty-controls">
+
+
+                            <button
+
+                              onClick={() =>
+                                decreaseQty(med.id)
+                              }
+
+                            >
+
+                              -
+
+                            </button>
+
+
+
+                            <span>
+                              {qty}
+                            </span>
+
+
+
+
+                            <button
+
+                              onClick={() =>
+                                increaseQty(med.id)
+                              }
+
+                              disabled={qty >= 5}
+
+                            >
+
+                              +
+
+                            </button>
+
+
+
+                          </div>
+
+
+                        )
+                      }
+
+
+
+                    </div>
+
+
+
+                  </div>
+
+
+                );
+
+
+              })
+
+            }
+
+
+
+          </div>
+
+
+        )
+      }
+
+
+
     </div>
+
+
   );
+
 }
+
 
 export default Help;

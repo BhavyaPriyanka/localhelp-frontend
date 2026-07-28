@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import Header from "./Header";
 
 function Home() {
   const navigate = useNavigate();
@@ -7,8 +8,12 @@ function Home() {
   return (
     <div className="home-container">
 
+      <Header />
+
+      {/* Hero Section */}
       <div className="hero">
         <h1>LocalHelp</h1>
+
         <p>Get medicines and local help instantly</p>
 
         <button
@@ -19,6 +24,7 @@ function Home() {
         </button>
       </div>
 
+      {/* Blog Cards */}
       <div className="blog">
         <div className="card">
           <h3>Community Update</h3>

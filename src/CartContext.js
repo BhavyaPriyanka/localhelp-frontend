@@ -7,7 +7,10 @@ export function CartProvider({ children }) {
   const [lastOrder, setLastOrder] = useState(null);
 
   const addToCart = (medicine) => {
-    setCartItems((prev) => {
+
+  setLastOrder(null);
+
+  setCartItems((prev) => {
       const exists = prev.find((i) => i.id === medicine.id);
 
       if (exists) {
@@ -47,18 +50,21 @@ export function CartProvider({ children }) {
     if (cartItems.length === 0) return;
 
     try {
-      const response = await fetch("/api/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          items: cartItems.map((i) => ({
-            medicineId: i.id,
-            quantity: i.quantity
-          }))
-        })
-      });
+      const token = localStorage.getItem("token");
+
+const response = await fetch("http://localhost:8080/orders", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`
+  },
+  body: JSON.stringify({
+    items: cartItems.map((i) => ({
+      medicineId: i.id,
+      quantity: i.quantity
+    }))
+  })
+});
 
       if (!response.ok) throw new Error("Order failed");
 

@@ -1,25 +1,59 @@
 import React, { useState } from "react";
 
 function AuthModal({ type, onClose }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
 
-  const handleSubmit = () => {
-    if (type === "signup") {
-      setMsg("Verification email sent. Please verify to continue.");
+  const handleSubmit = async () => {
+    if (type === "signin") {
+      try {
+        const response = await fetch("http://localhost:8080/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            username,
+            password
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("role", data.role);
+          localStorage.setItem("username", username);
+
+          setMsg("Login Successful");
+
+          setTimeout(() => {
+            onClose();
+            window.location.reload();
+          }, 800);
+        } else {
+          setMsg(data.message || "Invalid username or password");
+        }
+      } catch (err) {
+        console.error(err);
+        setMsg("Unable to connect to backend");
+      }
+
+      return;
     }
 
-    if (type === "signin") {
-      setMsg("Login request sent. Backend will verify credentials.");
+    if (type === "signup") {
+      setMsg("Signup will be implemented later.");
     }
 
     if (type === "forgot") {
-      setMsg("Reset code sent to email.");
+      setMsg("Forgot Password will be implemented later.");
     }
   };
 
   return (
     <div className="modal-bg">
-
       <div className="modal">
 
         <h2>
@@ -38,9 +72,20 @@ function AuthModal({ type, onClose }) {
 
         {type === "signin" && (
           <>
-            <input placeholder="Email" />
-            <input type="password" placeholder="Password" />
-            <p className="link" onClick={() => setMsg("Switch to forgot password flow")}>
+            <input
+              placeholder="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+
+            <p className="link">
               Forgot Password?
             </p>
           </>
@@ -64,7 +109,6 @@ function AuthModal({ type, onClose }) {
         {msg && <p className="msg">{msg}</p>}
 
       </div>
-
     </div>
   );
 }
