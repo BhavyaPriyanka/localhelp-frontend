@@ -7,8 +7,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+
 # =========================
-# Build output (IMPORTANT)
+# Build output
 # =========================
 dist/
 build/
@@ -17,6 +18,7 @@ out/
 .nuxt/
 coverage/
 
+
 # =========================
 # Environment files
 # =========================
@@ -24,13 +26,16 @@ coverage/
 .env.*
 !.env.example
 
+
 # =========================
 # OS / Editor junk
 # =========================
 .DS_Store
 Thumbs.db
+
 .vscode/
 .idea/
+
 
 # =========================
 # Logs
@@ -38,16 +43,15 @@ Thumbs.db
 logs/
 *.log
 
-# =========================
-# Nginx / deployment artifacts
-# (IMPORTANT for your setup)
-# =========================
-*.conf
-nginx.conf
-localhelp.conf
 
 # =========================
 # Temporary files
 # =========================
 tmp/
 temp/
+
+
+# =========================
+# Local runtime files
+# =========================
+*.local
