@@ -1,15 +1,269 @@
-Home Page
+# LocalHelp Frontend Documentation
 
-<img width="1356" height="767" alt="image" src="https://github.com/user-attachments/assets/bafe1c20-2d66-488f-8e12-30102fa826bb" />
+## Overview
 
-Help Page
+LocalHelp frontend is a React application used by users to browse medicines, manage cart items, place orders, and view previous orders.
 
-<img width="1356" height="720" alt="image" src="https://github.com/user-attachments/assets/47bfccd4-0f60-4a67-a835-96acff4123a5" />
+## Technology
 
-Cart Page
+- React
+- JavaScript
+- React Router
+- Fetch API
+- CSS
 
-<img width="1345" height="711" alt="image" src="https://github.com/user-attachments/assets/928c1875-fcdd-488c-8835-1b8497c01ea1" />
-<img width="1358" height="697" alt="image" src="https://github.com/user-attachments/assets/3daf3f4e-50d7-4654-8b89-c4ab31372bd4" />
+
+# Features
 
 
+## 1. User Authentication
 
+Users can login using username and password.
+
+After successful login:
+
+- JWT token is stored in browser localStorage
+- JWT token is attached with secured API requests
+- User session is maintained until logout
+
+
+Stored data:
+
+```
+token
+username
+role
+```
+
+
+API:
+
+```
+POST /auth/login
+```
+
+
+Request:
+
+```json
+{
+  "username": "user",
+  "password": "password"
+}
+```
+
+
+Response:
+
+```json
+{
+  "username": "user",
+  "role": "USER",
+  "token": "JWT_TOKEN"
+}
+```
+
+
+---
+
+# 2. Medicine Listing
+
+Users can view available medicines with:
+
+- Medicine name
+- Price
+- Available stock
+
+
+API:
+
+```
+GET /medicines
+```
+
+
+Response Example:
+
+```json
+[
+  {
+    "id":1,
+    "name":"Paracetamol",
+    "price":20,
+    "stock":50
+  }
+]
+```
+
+
+---
+
+# 3. Cart Management
+
+Users can:
+
+- Add medicine to cart
+- Increase quantity
+- Decrease quantity
+- Remove medicine from cart
+
+
+Cart data contains:
+
+```
+medicineId
+medicineName
+price
+quantity
+```
+
+
+Cart management is handled using React Context.
+
+
+---
+
+# 4. Place Order
+
+When user confirms the cart, frontend sends order details to backend.
+
+
+API:
+
+```
+POST /orders
+```
+
+
+Headers:
+
+```
+Authorization: Bearer JWT_TOKEN
+```
+
+
+Request:
+
+```json
+{
+  "items":[
+    {
+      "medicineId":2,
+      "quantity":2
+    }
+  ]
+}
+```
+
+
+Response:
+
+```json
+{
+  "orderId":9,
+  "totalAmount":70,
+  "message":"ORDER PLACED SUCCESSFULLY"
+}
+```
+
+
+---
+
+# 5. Order History
+
+Users can view their previous orders.
+
+
+API:
+
+```
+GET /orders/my-orders
+```
+
+
+Headers:
+
+```
+Authorization: Bearer JWT_TOKEN
+```
+
+
+Response:
+
+```json
+[
+  {
+    "orderId":9,
+    "totalAmount":70,
+    "items":[
+      {
+        "medicineName":"Dolo 650",
+        "quantity":2,
+        "price":35
+      }
+    ]
+  }
+]
+```
+
+
+---
+
+# Frontend Pages
+
+
+```
+Login
+ |
+Home
+ |
+Medicine List
+ |
+Cart
+ |
+Checkout
+ |
+My Orders
+```
+
+
+---
+
+# API Communication Flow
+
+
+```
+React Frontend
+
+      |
+      |
+      | HTTP Request + JWT Token
+
+      v
+
+Spring Boot Backend
+
+      |
+      |
+      v
+
+JSON Response
+
+      |
+      |
+      v
+
+React UI Update
+```
+
+
+---
+
+# Current Completed Features
+
+- User login
+- JWT token handling
+- Medicine listing
+- Cart management
+- Order placement
+- Order history display
