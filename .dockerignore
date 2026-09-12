@@ -1,0 +1,12 @@
+code/node_modules
+code/build
+code/.git
+code/.gitignore
+code/.env
+code/.env.*
+*.log
+.git
+.gitignore
+README.md
+Dockerfile
+docker-compose.yml
