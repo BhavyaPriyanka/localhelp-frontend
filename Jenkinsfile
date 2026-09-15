@@ -144,7 +144,7 @@ pipeline {
 
                     echo "===== UPDATING IMAGE VERSION ====="
 
-                    sed -i 's/IMAGE_VERSION/${version}/g' values.yaml
+                   sed -i "s/IMAGE_VERSION/${BUILD_NUMBER}/g" values.yaml
 
 
                     echo "===== UPDATED HELM VALUES ====="
