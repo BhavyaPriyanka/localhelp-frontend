@@ -15,7 +15,7 @@ RUN npm ci
 
 
 # Copy source code
-COPY code/ .
+COPY . .
 
 
 # Build React application
