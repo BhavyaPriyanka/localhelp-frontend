@@ -8,7 +8,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy dependency files first (Docker layer caching)
-COPY code/package*.json ./
+COPY package*.json ./
 
 # Install dependencies
 RUN npm ci
