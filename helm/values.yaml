@@ -4,4 +4,4 @@ deployment:
   imageVersion: IMAGE_VERSION
 
 targetGroup:
-  arn: arn:aws:elasticloadbalancing:us-east-1:837206354502:targetgroup/localhelp-dev-frontend/055f464eee4f124e
+  arn: ""

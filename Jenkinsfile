@@ -151,12 +151,22 @@ pipeline {
 
                     cat values.yaml
 
+                    echo "===== GETTING FRONTEND TARGET GROUP ARN ====="
+
+                    TARGET_GROUP_ARN=$(aws elbv2 describe-target-groups \
+                        --region ${region} \
+                        --names localhelp-dev-frontend \
+                        --query 'TargetGroups[0].TargetGroupArn' \
+                        --output text)
+
+                    echo "TARGET GROUP ARN = ${TARGET_GROUP_ARN}"
+
 
                     echo "===== HELM UPGRADE / INSTALL ====="
-
                     helm upgrade --install frontend . \
                         --namespace localhelp \
-                        --create-namespace
+                        --create-namespace \
+                        --set targetGroup.arn="${TARGET_GROUP_ARN}"
 
 
                     echo "===== HELM RELEASE STATUS ====="
