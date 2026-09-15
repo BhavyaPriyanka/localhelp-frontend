@@ -9,15 +9,14 @@ pipeline {
     options {
         timeout(time: 30, unit: 'MINUTES')
         disableConcurrentBuilds()
-       
     }
 
     environment {
-        nexusUrl = 'nexus.localhelp.store:8081'
-        APP_NAME  = "frontend"
-        region = 'us-east-1'
+        nexusUrl   = 'nexus.localhelp.store:8081'
+        APP_NAME   = 'frontend'
+        region     = 'us-east-1'
         account_id = '837206354502'
-        ECR_REPO = 'localhelp-frontend'
+        ECR_REPO   = 'localhelp-frontend'
     }
 
     stages {
@@ -25,7 +24,13 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 sh '''
-                   npm install
+                    set -e
+
+                    echo "===== INSTALLING NPM DEPENDENCIES ====="
+
+                    npm install
+
+                    echo "===== DEPENDENCIES INSTALLED ====="
                 '''
             }
         }
@@ -33,9 +38,17 @@ pipeline {
         stage('Build React Application') {
             steps {
                 sh '''
+                    set -e
+
+                    echo "===== BUILDING REACT APPLICATION ====="
+
                     npm run build
 
+                    echo "===== BUILD DIRECTORY ====="
+
                     ls -ltr build
+
+                    echo "===== REACT BUILD COMPLETED ====="
                 '''
             }
         }
@@ -46,23 +59,29 @@ pipeline {
                     version = env.BUILD_NUMBER
                 }
 
-                 sh '''
+                sh '''
+                    set -e
+
+                    echo "===== PREPARING FRONTEND ARTIFACT ====="
+
                     zip -r frontend-${BUILD_NUMBER}.zip build
-                '''
 
-                 sh '''
-                    ls -lh *.zip
-                '''
+                    echo "===== ARTIFACT CREATED ====="
 
+                    ls -lh frontend-${BUILD_NUMBER}.zip
+                '''
             }
         }
 
-          stage('Docker Build and Push to ECR') {
+        stage('Docker Build and Push to ECR') {
             steps {
                 sh """
+                    set -e
+
                     echo "===== LOGIN TO ECR ====="
 
-                    aws ecr get-login-password --region ${region} | \
+                    aws ecr get-login-password \
+                        --region ${region} | \
                     docker login \
                         --username AWS \
                         --password-stdin \
@@ -85,13 +104,21 @@ pipeline {
 
                     docker push \
                         ${account_id}.dkr.ecr.${region}.amazonaws.com/${ECR_REPO}:${version}
+
+
+                    echo "===== IMAGE PUSH COMPLETED ====="
+
+                    echo "IMAGE:"
+                    echo "${account_id}.dkr.ecr.${region}.amazonaws.com/${ECR_REPO}:${version}"
                 """
             }
         }
 
-         stage('Deploy to K8') {
+        stage('Deploy to K8') {
             steps {
                 sh """
+                    set -e
+
                     echo "========= AUTHENTICATE TO EKS =========="
 
                     aws eks update-kubeconfig \
@@ -100,6 +127,9 @@ pipeline {
 
                     export KUBECONFIG=/home/ec2-user/.kube/config
 
+
+                    echo "========= CHECK KUBERNETES NODES =========="
+
                     kubectl get nodes
 
 
@@ -107,98 +137,143 @@ pipeline {
 
                     cd helm
 
+                    echo "===== CURRENT HELM VALUES ====="
+
+                    cat values.yaml
+
+
+                    echo "===== UPDATING IMAGE VERSION ====="
+
                     sed -i 's/IMAGE_VERSION/${version}/g' values.yaml
+
+
+                    echo "===== UPDATED HELM VALUES ====="
+
+                    cat values.yaml
+
+
+                    echo "===== HELM UPGRADE / INSTALL ====="
 
                     helm upgrade --install frontend . \
                         --namespace localhelp \
                         --create-namespace
 
 
-                    echo "========== CHECK NAMESPACE AND PODS =========="
+                    echo "===== HELM RELEASE STATUS ====="
+
+                    helm status frontend \
+                        --namespace localhelp
+
+
+                    echo "========== CHECK NAMESPACE =========="
 
                     kubectl get ns
 
-                    kubectl get pods -n localhelp
 
-                    echo "========== FRONTEND DEPLOYMENT STATUS =========="
+                    echo "========== CHECK FRONTEND DEPLOYMENT =========="
+
+                    kubectl get deployment frontend \
+                        -n localhelp
+
+
+                    echo "========== CHECK FRONTEND PODS =========="
+
+                    kubectl get pods \
+                        -n localhelp \
+                        -o wide
+
+
+                    echo "========== WAIT FOR FRONTEND ROLLOUT =========="
 
                     kubectl rollout status \
                         deployment/frontend \
-                        -n localhelp
+                        -n localhelp \
+                        --timeout=180s
+
+
+                    echo "========== FRONTEND ROLLOUT SUCCESSFUL =========="
+
+                    kubectl get pods \
+                        -n localhelp \
+                        -l app=frontend \
+                        -o wide
                 """
             }
         }
 
-
-
         stage('Upload Artifact to S3') {
             steps {
                 sh """
+                    set -e
+
                     echo "===== UPLOADING FRONTEND ARTIFACT TO S3 ====="
 
                     aws s3 cp \
                         frontend-${version}.zip \
                         s3://localhelp-frontend-artifacts/frontend/${version}/frontend-${version}.zip
 
+
                     echo "===== S3 UPLOAD COMPLETED ====="
 
-                    echo "===== S3 ARTIFACTS ====="
+
+                    echo "===== VERIFYING S3 ARTIFACT ====="
 
                     aws s3 ls \
                         s3://localhelp-frontend-artifacts/frontend/${version}/
+
+
+                    echo "===== FRONTEND ARTIFACT UPLOAD SUCCESSFUL ====="
                 """
             }
         }
     }
 
+    /*
+    stage('Upload Artifact to Nexus') {
+        steps {
+            script {
 
-      
-        // stage('Upload Artifact to Nexus') {
-        //     steps {
-        //         script {
+                nexusArtifactUploader(
+                    nexusVersion: 'nexus3',
+                    protocol: 'http',
+                    nexusUrl: nexusUrl,
+                    repository: 'frontend',
+                    credentialsId: 'nexus-auth',
 
-        //             nexusArtifactUploader(
-        //                 nexusVersion: 'nexus3',
-        //                 protocol: 'http',
-        //                 nexusUrl: nexusUrl,
-        //                 repository: 'frontend',
-        //                 credentialsId: 'nexus-auth',
+                    groupId: 'com.localhelp',
+                    version: version,
 
-        //                 groupId: 'com.localhelp',
-        //                 version: version,
+                    artifacts: [
+                        [
+                            artifactId: APP_NAME,
+                            classifier: '',
+                            file: "frontend-${version}.zip",
+                            type: 'zip'
+                        ]
+                    ]
+                )
 
-        //                 artifacts: [
-        //                     [
-        //                         artifactId: APP_NAME,
-        //                         classifier: '',
-        //                         file: "frontend-${version}.zip",
-        //                         type: 'zip'
-        //                     ]                            
-        //                 ]
-        //             )
-
-        //         }
-        //     }
-        // }
-        // stage('Trigger Frontend Deployment') {
-
-        //     steps {
-
-        //         build(
-        //             job: 'frontend-deploy',
-        //             wait: false,
-        //             parameters: [
-        //                 string(
-        //                     name: 'VERSION',
-        //                     value: version
-        //                 )
-        //             ]
-        //         )
-
-        //     }
-
-        // }
+            }
+        }
     }
+
+    stage('Trigger Frontend Deployment') {
+        steps {
+
+            build(
+                job: 'frontend-deploy',
+                wait: false,
+                parameters: [
+                    string(
+                        name: 'VERSION',
+                        value: version
+                    )
+                ]
+            )
+
+        }
+    }
+    */
 
     post {
 
@@ -208,10 +283,17 @@ pipeline {
         }
 
         success {
+            echo "======================================"
             echo "Frontend Pipeline Successful"
+            echo "Version: ${version}"
+            echo "======================================"
         }
 
         failure {
+            echo "======================================"
             echo "Frontend Pipeline Failed"
+            echo "Version: ${version}"
+            echo "======================================"
         }
     }
+}

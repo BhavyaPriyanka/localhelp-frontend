@@ -1,16 +1,20 @@
 apiVersion: v1
 kind: Service
+
 metadata:
   name: frontend
   namespace: localhelp
+
 spec:
-  type: LoadBalancer
+  type: ClusterIP
+
   selector:
     app: frontend
     purpose: deployment
     tier: frontend-app
     project: localhelp
+
   ports:
-  - protocol: TCP
-    port: 80 #service-port
-    targetPort: 8080 #target-port
+    - protocol: TCP
+      port: 80
+      targetPort: 8080

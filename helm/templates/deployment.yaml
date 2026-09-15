@@ -1,25 +1,25 @@
-kind: Deployment
 apiVersion: apps/v1
+kind: Deployment
 
 metadata:
   name: frontend
   namespace: localhelp
+
   labels:
     app: frontend
     purpose: deployment
     tier: frontend-app
     project: localhelp
 
-
 spec:
   replicas: {{ .Values.deployment.replicas }}
 
   selector:
     matchLabels:
-     app: frontend
-     purpose: deployment
-     tier: frontend-app
-     project: localhelp
+      app: frontend
+      purpose: deployment
+      tier: frontend-app
+      project: localhelp
 
   template:
     metadata:
@@ -28,24 +28,60 @@ spec:
         purpose: deployment
         tier: frontend-app
         project: localhelp
-     
-    spec:
 
+    spec:
       nodeSelector:
-        workload: backend
+        workload: frontend
+
       containers:
-       - name: frontend
-         image: {{ .Values.deployment.image }}:{{ .Values.deployment.imageVersion }}
-         volumeMounts:
-          - name: nginx-conf
-            mountPath: /etc/nginx/http.d/default.conf
-            subPath: nginx.conf
-            readOnly: true
+        - name: frontend
+
+          image: {{ .Values.deployment.image }}:{{ .Values.deployment.imageVersion }}
+
+          ports:
+            - containerPort: 8080
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+
+            limits:
+              cpu: "150m"
+              memory: "256Mi"
+
+          volumeMounts:
+            - name: nginx-conf
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: nginx.conf
+              readOnly: true
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+
       volumes:
         - name: nginx-conf
+
           configMap:
             name: frontend
-            items:
-             - key: nginx.conf
-               path: nginx.conf 
 
+            items:
+              - key: nginx.conf
+                path: nginx.conf
