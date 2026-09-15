@@ -30,8 +30,8 @@ spec:
         project: localhelp
 
     spec:
-      nodeSelector:
-        workload: frontend
+      # nodeSelector:
+      #   workload: frontend
 
       containers:
         - name: frontend
