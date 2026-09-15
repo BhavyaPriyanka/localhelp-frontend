@@ -15,6 +15,9 @@ pipeline {
     environment {
         nexusUrl = 'nexus.localhelp.store:8081'
         APP_NAME  = "frontend"
+        region = 'us-east-1'
+        account_id = '837206354502'
+        ECR_REPO = 'localhelp-frontend'
     }
 
     stages {
