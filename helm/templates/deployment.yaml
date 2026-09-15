@@ -1,0 +1,48 @@
+kind: Deployment
+apiVersion: apps/v1
+
+metadata:
+  name: frontend
+  namespace: localhelp
+  labels:
+    app: frontend
+    purpose: deployment
+    tier: frontend-app
+    project: localhelp
+
+
+spec:
+  replicas: {{ .Values.deployment.replicas }}
+
+  selector:
+    matchLabels:
+     app: frontend
+     purpose: deployment
+     tier: frontend-app
+     project: localhelp
+
+  template:
+    metadata:
+      labels:
+        app: frontend
+        purpose: deployment
+        tier: frontend-app
+        project: localhelp
+     
+    spec:
+      containers:
+       - name: frontend
+         image: {{ .Values.deployment.image }}:{{ .Values.deployment.imageVersion }}
+         volumeMounts:
+          - name: nginx-conf
+            mountPath: /etc/nginx/http.d/default.conf
+            subPath: nginx.conf
+            readOnly: true
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: frontend
+            items:
+             - key: nginx.conf
+               path: nginx.conf 
+
