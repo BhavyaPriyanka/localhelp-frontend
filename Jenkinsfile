@@ -115,102 +115,90 @@ pipeline {
         }
 
         stage('Deploy to K8') {
-            steps {
-                sh """
-                    set -e
+    steps {
+        withEnv(["IMAGE_VERSION=${version}"]) {
+            sh '''
+                set -e
 
-                    echo "========= AUTHENTICATE TO EKS =========="
+                echo "========= AUTHENTICATE TO EKS =========="
 
-                    aws eks update-kubeconfig \
-                        --region ${region} \
-                        --name localhelp-dev
+                aws eks update-kubeconfig \
+                    --region "$region" \
+                    --name localhelp-dev
 
-                    export KUBECONFIG=/home/ec2-user/.kube/config
+                export KUBECONFIG=/home/ec2-user/.kube/config
 
+                echo "========= CHECK KUBERNETES NODES =========="
 
-                    echo "========= CHECK KUBERNETES NODES =========="
-
-                    kubectl get nodes
-
-
-                    echo "========= DEPLOY FRONTEND USING HELM =========="
-
-                    cd helm
-
-                    echo "===== CURRENT HELM VALUES ====="
-
-                    cat values.yaml
+                kubectl get nodes
 
 
-                    echo "===== UPDATING IMAGE VERSION ====="
+                echo "========= DEPLOY FRONTEND USING HELM =========="
 
-                    sed -i 's/IMAGE_VERSION/${imageVersion}/g' values.yaml
+                cd helm
 
+                echo "===== CURRENT HELM VALUES ====="
 
-                    echo "===== UPDATED HELM VALUES ====="
-
-                    cat values.yaml
-
-                    echo "===== GETTING FRONTEND TARGET GROUP ARN ====="
-
-                    TARGET_GROUP_ARN=$(aws elbv2 describe-target-groups \
-                        --region ${region} \
-                        --names localhelp-dev-frontend \
-                        --query 'TargetGroups[0].TargetGroupArn' \
-                        --output text)
-
-                    echo "TARGET GROUP ARN = ${TARGET_GROUP_ARN}"
+                cat values.yaml
 
 
-                    echo "===== HELM UPGRADE / INSTALL ====="
-                    helm upgrade --install frontend . \
-                        --namespace localhelp \
-                        --create-namespace \
-                        --set targetGroup.arn="${TARGET_GROUP_ARN}"
+                echo "===== GETTING FRONTEND TARGET GROUP ARN ====="
+
+                TARGET_GROUP_ARN=$(aws elbv2 describe-target-groups \
+                    --region "$region" \
+                    --names localhelp-dev-frontend \
+                    --query 'TargetGroups[0].TargetGroupArn' \
+                    --output text)
+
+                echo "TARGET GROUP ARN = $TARGET_GROUP_ARN"
 
 
-                    echo "===== HELM RELEASE STATUS ====="
+                echo "===== HELM UPGRADE / INSTALL ====="
 
-                    helm status frontend \
-                        --namespace localhelp
-
-
-                    echo "========== CHECK NAMESPACE =========="
-
-                    kubectl get ns
+                helm upgrade --install frontend . \
+                    --namespace localhelp \
+                    --create-namespace \
+                    --set deployment.imageVersion="$IMAGE_VERSION" \
+                    --set targetGroup.arn="$TARGET_GROUP_ARN"
 
 
-                    echo "========== CHECK FRONTEND DEPLOYMENT =========="
+                echo "===== HELM RELEASE STATUS ====="
 
-                    kubectl get deployment frontend \
-                        -n localhelp
-
-
-                    echo "========== CHECK FRONTEND PODS =========="
-
-                    kubectl get pods \
-                        -n localhelp \
-                        -o wide
+                helm status frontend \
+                    --namespace localhelp
 
 
-                    echo "========== WAIT FOR FRONTEND ROLLOUT =========="
+                echo "========== CHECK FRONTEND DEPLOYMENT =========="
 
-                    kubectl rollout status \
-                        deployment/frontend \
-                        -n localhelp \
-                        --timeout=180s
+                kubectl get deployment frontend \
+                    -n localhelp
 
 
-                    echo "========== FRONTEND ROLLOUT SUCCESSFUL =========="
+                echo "========== CHECK FRONTEND PODS =========="
 
-                    kubectl get pods \
-                        -n localhelp \
-                        -l app=frontend \
-                        -o wide
-                """
-            }
+                kubectl get pods \
+                    -n localhelp \
+                    -o wide
+
+
+                echo "========== WAIT FOR FRONTEND ROLLOUT =========="
+
+                kubectl rollout status \
+                    deployment/frontend \
+                    -n localhelp \
+                    --timeout=180s
+
+
+                echo "========== FRONTEND ROLLOUT SUCCESSFUL =========="
+
+                kubectl get pods \
+                    -n localhelp \
+                    -l app=frontend \
+                    -o wide
+            '''
         }
-
+    }
+}
         stage('Upload Artifact to S3') {
             steps {
                 sh """
