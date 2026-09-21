@@ -2,7 +2,7 @@
 
 def configMap = [
 
-    type: "NodeJSEKS",
+    type: "nodeJSEKS",
     component: "localhelp-frontend",
     project: "localhelp"
 ]
