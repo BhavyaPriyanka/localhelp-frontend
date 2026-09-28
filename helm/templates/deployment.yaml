@@ -35,7 +35,7 @@ spec:
 
       containers:
         - name: frontend
-          imagePullPolicy: always
+          imagePullPolicy: IfNotPresent
           image: {{ .Values.deployment.image }}:{{ .Values.deployment.imageVersion }}
 
           ports:
